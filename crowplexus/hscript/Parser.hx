@@ -96,6 +96,11 @@ class Parser {
 	public var allowMetadata: Bool;
 
 	/**
+		allow public character files
+	**/
+	public var allowPublicChars: Bool = true; // 默认启用公共字符文件支持
+
+	/**
 		resume from parsing errors (when parsing incomplete code, during completion for example)
 	**/
 	public var resumeErrors: Bool;
@@ -659,7 +664,23 @@ class Parser {
 						push(TSemicolon);
 				}
 				mk(EIf(cond, e1, e2), p1, (e2 == null) ? tokenMax : pmax(e2));
-			case "var", "final":
+			case "var", "final", "public":
+				var isPublic = id == "public";
+				if (isPublic) {
+					if (!allowPublicChars) {
+						unexpected(TId("public"));
+					}
+					var nextId = getIdent();
+					switch (nextId) {
+						case "var", "final":
+							id = nextId;
+						case "function":
+							var inf = parseFunctionDecl();
+							return mk(EFunction(inf.args, inf.body, inf.name, inf.ret, isPublic), p1, pmax(inf.body));
+						default:
+							unexpected(TId(nextId));
+					}
+				}
 				var ident = getIdent();
 				var tk = token();
 				var t = null;
@@ -672,7 +693,12 @@ class Parser {
 					e = parseExpr();
 				else
 					push(tk);
-				mk(EVar(ident, t, e, id == "final"), p1, (e == null) ? tokenMax : pmax(e));
+				var varExpr = mk(EVar(ident, t, e, id == "final", isPublic), p1, (e == null) ? tokenMax : pmax(e));
+				if (isPublic) {
+					import crowplexus.iris.Iris;
+					Iris.globalVariables.set(ident, e);
+				}
+				return varExpr;
 			case "while":
 				var econd = parseExpr();
 				var e = parseExpr();

@@ -39,6 +39,11 @@ class Iris {
 	 * Map with stored instances of scripts.
 	**/
 	public static var instances: StringMap<Iris> = new StringMap<Iris>();
+	
+	/**
+	 * 全局变量存储
+	 */
+	public static var globalVariables: StringMap<Dynamic> = new StringMap<Dynamic>();
 
 	public static var registeredUsingEntries: Array<UsingEntry> = [
 		new UsingEntry("StringTools", function(o: Dynamic, f: String, args: Array<Dynamic>): Dynamic {
